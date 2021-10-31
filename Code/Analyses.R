@@ -838,3 +838,274 @@ gwr.model.city.Poor_AQI$SDF@data$CFR_0701R <- gwr.model.city.Poor_AQI$SDF@data$P
 
 tm_shape(gwr.model.city.Poor_AQI$SDF) + 
   tm_dots(col = "Poor_AQI_sig_coef")
+
+## to answer reviewer's comments, we add this section to test the country-level regression
+## country-level no2 test
+no2.analysis.data <- analysis.data %>%
+  dplyr::select(CFR_0701, no2, temperature, pressure, humidity, 
+                internal_movement_restrictions_0701, m_perc,
+                lg_pop_den, perc_45, perc_65, perc_80, GDP_per_C, Country.y) %>%
+  na.omit()
+no2.analysis.data <- no2.analysis.data %>%
+  aggregate(by = list(no2.analysis.data$Country.y), FUN = "mean")
+
+country.level.1 <- data.frame(Doubles=double(),
+                              Ints=integer(),
+                              Factors=factor(),
+                              Logicals=logical(),
+                              Characters=character(),
+                              stringsAsFactors=FALSE)
+for (country in no2.analysis.data$Group.1) {
+  covid <- covid19(country = country, level = 1)
+  covid_CFR <- covid %>%
+    dplyr::select(id, date, confirmed, recovered, deaths, population)
+  covid_CFR <- covid_CFR %>%
+    filter(date == ymd("2021-06-30"))
+  covid_CFR <- covid_CFR %>%
+    mutate(CFR = deaths / confirmed * 100)
+  covid_CFR$Group.1 <- country
+  country.level.1 <- rbind(country.level.1, covid_CFR)
+}
+
+no2.analysis.data <- left_join(no2.analysis.data, country.level.1)
+test.no2 <-
+  lm(CFR_0701 ~ no2 +  temperature + pressure + humidity + 
+       internal_movement_restrictions_0701 + m_perc +
+       lg_pop_den + perc_45 + perc_65 + perc_80 + GDP_per_C,
+     data = no2.analysis.data)
+
+## country-level so2 test
+so2.analysis.data <- analysis.data %>%
+  dplyr::select(CFR_0701, so2, temperature, pressure, humidity, 
+                internal_movement_restrictions_0701, m_perc,
+                lg_pop_den, perc_45, perc_65, perc_80, GDP_per_C, Country.y) %>%
+  na.omit()
+so2.analysis.data <- so2.analysis.data %>%
+  aggregate(by = list(so2.analysis.data$Country.y), FUN = "mean")
+
+country.level.1 <- data.frame(Doubles=double(),
+                              Ints=integer(),
+                              Factors=factor(),
+                              Logicals=logical(),
+                              Characters=character(),
+                              stringsAsFactors=FALSE)
+for (country in so2.analysis.data$Group.1) {
+  covid <- covid19(country = country, level = 1)
+  covid_CFR <- covid %>%
+    dplyr::select(id, date, confirmed, recovered, deaths, population)
+  covid_CFR <- covid_CFR %>%
+    filter(date == ymd("2021-06-30"))
+  covid_CFR <- covid_CFR %>%
+    mutate(CFR = deaths / confirmed * 100)
+  covid_CFR$Group.1 <- country
+  country.level.1 <- rbind(country.level.1, covid_CFR)
+}
+
+so2.analysis.data <- left_join(so2.analysis.data, country.level.1)
+test.so2 <-
+  lm(CFR_0701 ~ so2 +  temperature + pressure + humidity + 
+       internal_movement_restrictions_0701 + m_perc +
+       lg_pop_den + perc_45 + perc_65 + perc_80 + GDP_per_C,
+     data = so2.analysis.data)
+summary(test.so2)
+
+## country-level o3 test
+o3.analysis.data <- analysis.data %>%
+  dplyr::select(CFR_0701, o3, temperature, pressure, humidity, 
+                internal_movement_restrictions_0701, m_perc,
+                lg_pop_den, perc_45, perc_65, perc_80, GDP_per_C, Country.y) %>%
+  na.omit()
+o3.analysis.data <- o3.analysis.data %>%
+  aggregate(by = list(o3.analysis.data$Country.y), FUN = "mean")
+
+country.level.1 <- data.frame(Doubles=double(),
+                              Ints=integer(),
+                              Factors=factor(),
+                              Logicals=logical(),
+                              Characters=character(),
+                              stringsAsFactors=FALSE)
+for (country in o3.analysis.data$Group.1) {
+  covid <- covid19(country = country, level = 1)
+  covid_CFR <- covid %>%
+    dplyr::select(id, date, confirmed, recovered, deaths, population)
+  covid_CFR <- covid_CFR %>%
+    filter(date == ymd("2021-06-30"))
+  covid_CFR <- covid_CFR %>%
+    mutate(CFR = deaths / confirmed * 100)
+  covid_CFR$Group.1 <- country
+  country.level.1 <- rbind(country.level.1, covid_CFR)
+}
+
+o3.analysis.data <- left_join(o3.analysis.data, country.level.1)
+test.o3 <-
+  lm(CFR_0701 ~ o3 +  temperature + pressure + humidity + 
+       internal_movement_restrictions_0701 + m_perc +
+       lg_pop_den + perc_45 + perc_65 + perc_80 + GDP_per_C,
+     data = o3.analysis.data)
+summary(test.o3)
+
+## country-level pm25 test
+pm25.analysis.data <- analysis.data %>%
+  dplyr::select(CFR_0701, pm25, temperature, pressure, humidity, 
+                internal_movement_restrictions_0701, m_perc,
+                lg_pop_den, perc_45, perc_65, perc_80, GDP_per_C, Country.y) %>%
+  na.omit()
+pm25.analysis.data <- pm25.analysis.data %>%
+  aggregate(by = list(pm25.analysis.data$Country.y), FUN = "mean")
+
+country.level.1 <- data.frame(Doubles=double(),
+                              Ints=integer(),
+                              Factors=factor(),
+                              Logicals=logical(),
+                              Characters=character(),
+                              stringsAsFactors=FALSE)
+for (country in pm25.analysis.data$Group.1) {
+  covid <- covid19(country = country, level = 1)
+  covid_CFR <- covid %>%
+    dplyr::select(id, date, confirmed, recovered, deaths, population)
+  covid_CFR <- covid_CFR %>%
+    filter(date == ymd("2021-06-30"))
+  covid_CFR <- covid_CFR %>%
+    mutate(CFR = deaths / confirmed * 100)
+  covid_CFR$Group.1 <- country
+  country.level.1 <- rbind(country.level.1, covid_CFR)
+}
+
+pm25.analysis.data <- left_join(pm25.analysis.data, country.level.1)
+test.pm25 <-
+  lm(CFR_0701 ~ pm25 +  temperature + pressure + humidity + 
+       internal_movement_restrictions_0701 + m_perc +
+       lg_pop_den + perc_45 + perc_65 + perc_80 + GDP_per_C,
+     data = pm25.analysis.data)
+summary(test.pm25)
+
+## country-level pm10 test
+pm10.analysis.data <- analysis.data %>%
+  dplyr::select(CFR_0701, pm10, temperature, pressure, humidity, 
+                internal_movement_restrictions_0701, m_perc,
+                lg_pop_den, perc_45, perc_65, perc_80, GDP_per_C, Country.y) %>%
+  na.omit()
+pm10.analysis.data <- pm10.analysis.data %>%
+  aggregate(by = list(pm10.analysis.data$Country.y), FUN = "mean")
+
+country.level.1 <- data.frame(Doubles=double(),
+                              Ints=integer(),
+                              Factors=factor(),
+                              Logicals=logical(),
+                              Characters=character(),
+                              stringsAsFactors=FALSE)
+for (country in pm10.analysis.data$Group.1) {
+  covid <- covid19(country = country, level = 1)
+  covid_CFR <- covid %>%
+    dplyr::select(id, date, confirmed, recovered, deaths, population)
+  covid_CFR <- covid_CFR %>%
+    filter(date == ymd("2021-06-30"))
+  covid_CFR <- covid_CFR %>%
+    mutate(CFR = deaths / confirmed * 100)
+  covid_CFR$Group.1 <- country
+  country.level.1 <- rbind(country.level.1, covid_CFR)
+}
+
+pm10.analysis.data <- left_join(pm10.analysis.data, country.level.1)
+test.pm10 <-
+  lm(CFR_0701 ~ pm10 +  temperature + pressure + humidity + 
+       internal_movement_restrictions_0701 + m_perc +
+       lg_pop_den + perc_45 + perc_65 + perc_80 + GDP_per_C,
+     data = pm10.analysis.data)
+summary(test.pm10)
+
+## country-level AQI_Value test
+AQI_Value.analysis.data <- analysis.data %>%
+  dplyr::select(CFR_0701, AQI_Value, temperature, pressure, humidity, 
+                internal_movement_restrictions_0701, m_perc,
+                lg_pop_den, perc_45, perc_65, perc_80, GDP_per_C, Country.y) %>%
+  na.omit()
+AQI_Value.analysis.data <- AQI_Value.analysis.data %>%
+  aggregate(by = list(AQI_Value.analysis.data$Country.y), FUN = "mean")
+
+country.level.1 <- data.frame(Doubles=double(),
+                              Ints=integer(),
+                              Factors=factor(),
+                              Logicals=logical(),
+                              Characters=character(),
+                              stringsAsFactors=FALSE)
+for (country in AQI_Value.analysis.data$Group.1) {
+  covid <- covid19(country = country, level = 1)
+  covid_CFR <- covid %>%
+    dplyr::select(id, date, confirmed, recovered, deaths, population)
+  covid_CFR <- covid_CFR %>%
+    filter(date == ymd("2021-06-30"))
+  covid_CFR <- covid_CFR %>%
+    mutate(CFR = deaths / confirmed * 100)
+  covid_CFR$Group.1 <- country
+  country.level.1 <- rbind(country.level.1, covid_CFR)
+}
+
+AQI_Value.analysis.data <- left_join(AQI_Value.analysis.data, country.level.1)
+test.AQI_Value <-
+  lm(CFR_0701 ~ AQI_Value +  temperature + pressure + humidity + 
+       internal_movement_restrictions_0701 + m_perc +
+       lg_pop_den + perc_45 + perc_65 + perc_80 + GDP_per_C,
+     data = AQI_Value.analysis.data)
+summary(test.AQI_Value)
+
+## country-level Poor_AQI test
+Poor_AQI.analysis.data <- analysis.data %>%
+  dplyr::select(CFR_0701, Poor_AQI, temperature, pressure, humidity, 
+                internal_movement_restrictions_0701, m_perc,
+                lg_pop_den, perc_45, perc_65, perc_80, GDP_per_C, Country.y) %>%
+  na.omit()
+Poor_AQI.analysis.data <- Poor_AQI.analysis.data %>%
+  aggregate(by = list(Poor_AQI.analysis.data$Country.y), FUN = "mean")
+
+country.level.1 <- data.frame(Doubles=double(),
+                              Ints=integer(),
+                              Factors=factor(),
+                              Logicals=logical(),
+                              Characters=character(),
+                              stringsAsFactors=FALSE)
+for (country in Poor_AQI.analysis.data$Group.1) {
+  covid <- covid19(country = country, level = 1)
+  covid_CFR <- covid %>%
+    dplyr::select(id, date, confirmed, recovered, deaths, population)
+  covid_CFR <- covid_CFR %>%
+    filter(date == ymd("2021-06-30"))
+  covid_CFR <- covid_CFR %>%
+    mutate(CFR = deaths / confirmed * 100)
+  covid_CFR$Group.1 <- country
+  country.level.1 <- rbind(country.level.1, covid_CFR)
+}
+
+Poor_AQI.analysis.data <- left_join(Poor_AQI.analysis.data, country.level.1)
+test.Poor_AQI <-
+  lm(CFR_0701 ~ Poor_AQI +  temperature + pressure + humidity + 
+       internal_movement_restrictions_0701 + m_perc +
+       lg_pop_den + perc_45 + perc_65 + perc_80 + GDP_per_C,
+     data = Poor_AQI.analysis.data)
+summary(test.Poor_AQI)
+
+setwd("C:\\Users\\li.chao.987@s.kyushu-u.ac.jp\\OneDrive - Kyushu University\\06_Article\\")
+stargazer(test.no2, test.so2, test.o3,
+          test.pm25, test.pm10, test.AQI_Value,
+          test.Poor_AQI,
+          title = "Table XXX: Country-level Regression Results", type = "text", no.space = T,
+          covariate.labels = c('Average Concentration of NO2',
+                               'Average Concentration of SO2',
+                               'Average Concentration of O3',
+                               'Average Concentration of PM2.5',
+                               'Average Concentration of PM10',
+                               'Average AQI',
+                               'Probability with Poor AQI',
+                               'Average Temerature',
+                               'Average Pressure',
+                               'Average Humidity',
+                               "Internal Movement Restrictions",
+                               'Percentage of Male',
+                               'Population Density',
+                               'Percentage of Population 15 - 45',
+                               'Percentage of Population 45 - 65',
+                               'Percentage Of Population >= 65',
+                               'GDP per Capita (PPP)'),
+          dep.var.labels = "City-level COVID-19 CFR (%)",
+          column.labels = c("NO2", "SO2", "O3", "PM2.5", "PM10", "AQI", "Pr. AQI"),
+          out = '10_RegressionResult\\REV02\\CountryLevelRegression.added.html')
