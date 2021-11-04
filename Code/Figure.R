@@ -1,633 +1,495 @@
-library(ggplot2)
-library(sp)
-library(raster)
 library(tidyverse)
-library(rgdal)
-library(rgeos)
+library(ggplot2)
 library(sf)
-library(tmap)
-library(tmaptools)
-library(grid)
-library("viridis") 
-library("viridisLite")
-library(wesanderson)
+library(dplyr)
+library(cowplot)
 
-
-setwd(".\\Data\\")
-
-boundary <- st_read('country.shp', stringsAsFactors = F)
-
+# Figure 1
+boundary.1 = boundary %>% st_as_sf() %>% dplyr::select(geometry)
+sf::sf_use_s2(FALSE)
 CFR <- analysis.data %>%
   dplyr::select(CFR_0701, Longitude, Latitude) %>% na.omit()
-xy <- CFR %>% dplyr::select(Longitude, Latitude)
-CFR_point <- SpatialPointsDataFrame(coords = xy, data = CFR,
-                                     proj4string = CRS(proj))
-rm(xy)
-#----------------------------------------
-leg.tex.siz <- 2
-leg.tit.siz <- 1.8 * 1.5
-mai.tit.siz <- 3 * leg.tex.siz
-point.siz <- 0.6
-lab.siz <-  2
-#-----------------------------------------
 
-brk_cfr <- c(0, 0.5, 1, 1.5, 2, 2.5, 5)
-plot_cfr_all <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz) + 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(CFR_point) +
-  tm_dots("CFR_0701",size = point.siz, breaks = brk_cfr,
-          palette = 'YlOrRd',
-          midpoint = 2,
-          legend.is.portrait = F,  style = 'cont',
-          title = 'The City-level CFR of COVID-19 (%)',
-          labels = c('0', '0.5', '1', '1.5', '2', '2.5', '5+')
-          ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
+
+p <- ggplot() +
+  geom_sf(data = boundary.1, color = "grey65", fill = "grey97", alpha = 0.5, size = 0.1) +
+  geom_point(data = CFR, aes(x= Longitude, y = Latitude, color = CFR_0701)) +
+  scale_color_gradient(low = "yellow", high = "red2",
+                       breaks = seq(0,10,2) ) +
+  coord_sf(expand = F, crs = 4326) +
+  theme(axis.text.x = element_text(  colour = "black", size=12),
+        axis.text.y = element_text( colour = "black", size=12),
+        plot.title = element_text(size=16, face="bold", hjust=0.5),
+        panel.background = element_rect(fill = "white"),
+        panel.grid.major = element_line(size = 0.8, linetype = 'solid',
+                                        colour = "gray88"),
+        panel.border = element_rect(colour = "black", fill=NA, size=1),
+        legend.position = c(0.07, 0.1), legend.direction="horizontal"
+        )  + 
+  labs(color = element_blank()) + 
+  annotate(geom="text", x = -175, y = -52, label="Legend:", hjust = 0, size = 6) +
+  annotate(geom="text", x = -175, y = -59, label="The City-level CFR of COVID-19(%):", hjust = 0, size = 4)
+
+ggsave("Figure_1.jpg", p, device = "jpeg", 
+       path = "C:/Users/li.chao.987@s.kyushu-u.ac.jp/OneDrive - Kyushu University/06_Article/04_Figure/REV03",
+       width = 297, height = 210, units = "mm", dpi = 500
+)
+# Figure 1 end
+
+# Figure 2
+# step 0 generate data
+data.plot <- dplyr::full_join(no2, so2)
+data.plot <- dplyr::full_join(data.plot, o3)
+data.plot <- dplyr::full_join(data.plot, pm25)
+data.plot <- dplyr::full_join(data.plot, pm10)
+data.plot <- dplyr::full_join(data.plot, AQI)
+data.plot <- dplyr::full_join(data.plot, Pr_AQI)
+data.plot <- dplyr::full_join(data.plot, CFR)
+data.plot <- data.plot %>% as.data.frame() %>%
+  filter(!is.na(CFR_0701)) %>% 
+  dplyr::select(-CFR_0701)
+
+data.plot$ID <- 1:nrow(data.plot)
+
+data.plot <- data.plot %>% 
+  mutate(
+    no2 = ifelse(is.na(no2), 0, no2),
+    so2 = ifelse(is.na(so2), 0, so2),
+    o3 = ifelse(is.na(o3), 0, o3),
+    pm25 = ifelse(is.na(pm25), 0, pm25),
+    pm10 = ifelse(is.na(pm10), 0, pm10),
+    AQI_Value = ifelse(is.na(AQI_Value), 0, AQI_Value),
+    Poor_AQI = ifelse(is.na(Poor_AQI), 0, Poor_AQI)
     )
-plot_cfr_all
-plot_cfr_all %>%
-  tmap_save("01_CFR_all_AP_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
+data.plot <- data.plot %>% 
+  mutate(
+    no2.n = no2 / 5,
+    no2.n = ifelse(no2.n > 5, 5, no2.n),
+    so2.n = so2 / 4,
+    so2.n = ifelse(so2.n > 5, 5, so2.n),
+    o3.n = o3 / 8,
+    o3.n = ifelse(o3.n > 5, 5, o3.n),
+    pm25.n = pm25 / 20,
+    pm25.n = ifelse(pm25.n > 5, 5, pm25.n),
+    pm10.n = pm10 / 12,
+    pm10.n = ifelse(pm10.n > 5, 5, pm10.n),
+    AQI_Value.n = AQI_Value / 16,
+    AQI_Value.n = ifelse(AQI_Value.n > 5, 5, AQI_Value.n),
+    Poor_AQI.n = Poor_AQI / 0.12,
+    Poor_AQI.n = ifelse(Poor_AQI.n > 5, 5, Poor_AQI.n)
+    )
+data.plot <- data.plot %>% 
+  dplyr::select(-no2, -so2, -o3, -pm25, -pm10, -AQI_Value, -Poor_AQI)
 
-rm(CFR)
-rm(CFR_point)
-#---------------------------------------------
+data.plot <- data.plot %>%
+  pivot_longer(cols = c(no2.n, so2.n, o3.n, pm25.n, pm10.n, AQI_Value.n, Poor_AQI.n), 
+               names_to = "type", values_to = "value")
+data.plot$type <- data.plot$type %>% as.factor()
+data.plot$max.Radius <- 5
 
-no2 <- analysis.data %>%
-  dplyr::select(no2, Longitude, Latitude) %>% na.omit()
-xy <- no2 %>% dplyr::select(Longitude, Latitude)
-no2_point <- SpatialPointsDataFrame(coords = xy, data = no2,
-                                    proj4string = CRS(proj))
-rm(xy)
-#---------------------------------------------------Concentration-air-pollution-----------
-brk_dot <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60)
-plot_c1 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(no2_point) +
-  tm_dots("no2",size = point.siz, breaks = brk_dot,
-          midpoint = 25,
-          palette = 'YlOrRd',
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0", "", "10", "", "20", "", "30", "", "40", "", "50", "", "60+"),
-          title = expression(paste('The Average Concentration of ', NO[2]))
-          ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
+## test
+#data.plot.t <- data.plot %>% filter(ID < 5)
+#ggplot(data.plot.t,
+#       aes(x = type, y = value, fill = type)) +
+#  geom_col(position = "identity", width = 1) +
+#  scale_fill_manual(values = c("red", "blue", "green", "yellow", "gray70", "orange", "magenta")) +
+#  coord_polar() +
+#  facet_grid(~ID) +
+#  theme_void()
+
+# step 0 end
+
+# step 1 
+df.grobs <- data.plot %>%
+  group_by(ID, Longitude, Latitude, max.Radius) %>%
+  do(subplots = ggplot(.,
+                       aes(x = type, y = value, fill = type)) +
+       geom_col(position = "identity", width = 1,
+                alpha = 0.5,            # increase transparency to see map underneath
+                show.legend = FALSE) +  # don't show legend for individual grobs
+       scale_y_continuous(limits = c(0, unique(.$max.Radius))) + 
+       scale_fill_manual(values = c("red", "blue", "green", "yellow", "gray34", "orange", "deepskyblue")) +
+       coord_polar() +
+       theme_void()) %>%
+  mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                           x = Longitude - 3,      # change from 1 to other 
+                                           y = Latitude - 3,      # values if necessary,
+                                           xmax = Longitude + 3,   # depending on the map's
+                                           ymax = Latitude + 3))) # resolution.
+# step 1 end
+
+# step 2
+boundary.1 = boundary %>% st_as_sf() %>% dplyr::select(geometry)
+sf::sf_use_s2(FALSE)
+
+p <- ggplot() +
+  geom_sf(data = boundary.1, color = "grey65", fill = "grey97", alpha = 0.5, size = 0.1) +
+  coord_sf(expand = F, crs = 4326) +
+  theme_bw() 
+
+p <- p + annotate(geom="text", x = -175, y = 15, label="Legend:",
+                  hjust = 0) +
+  annotate(geom="text", x = -175, y = 11.5, label="(Note: Data have been normalized)",
+           hjust = 0, size = 2) +
+  annotate(
+    geom="text", x = -175, y = -65, 
+    label = paste0(
+      "Normalization Process:\nNorm(AQI) = AQI / 16, max[Norm(AQI)] = 5\n",
+      "Norm(NO2) = NO2 / 5, max[Norm(NO2)] = 5\n",
+      "Norm(O3) = O3 / 8, max[Norm(O3)] = 5\n",
+      "Norm(PM10) = PM10 / 12, max[Norm(PM10)] = 5\n",
+      "Norm(PM2.5) = PM2.5 / 20, max[Norm(PM2.5)] = 5\n",
+      "Norm(AIQ(F)) = Probability with Poor AIQ / 0.12, max[Norm(AIQ(F))] = 5\n",
+      "Norm(SO2) = SO2 / 4, max[Norm(SO2)] = 5\n"
+      ),
+    hjust = 0,
+    size = 2
+           )
+
+# step 2 end
+
+# step 3
+p <- p + df.grobs$subgrobs
+
+data.plot.l <- data.plot %>% filter(ID < 2)
+data.plot.l$value <- c(1,2,3,4,5,3,4)
+levels(data.plot.l$type) <- c("AQI", "NO2", "O3", "PM10", "PM2.5", "AQI(F)", "SO2")
+legend.p <- ggplot(data.plot.l,
+                   aes(x = type, y = value, fill = type)) +
+  geom_col(position = "identity", width = 1, alpha = 0.5) +
+  guides(fill=FALSE) +
+  scale_fill_manual(values = c("red", "blue", "green", "yellow", "gray34", "orange", "deepskyblue")) +
+  coord_polar() +
+  theme_bw(base_size = 5)
+legend.p
+
+plot.with.insert <-
+  ggdraw() +
+  draw_plot(p) +
+  draw_plot(legend.p, x = 0.03, y = .37, width = .2, height = .2)
+
+#plot.with.insert
+
+ggsave("Figure_2.jpg", plot.with.insert, device = "jpeg", 
+       path = "C:/Users/li.chao.987@s.kyushu-u.ac.jp/OneDrive - Kyushu University/06_Article/04_Figure/REV03",
+       width = 297, height = 210, units = "mm", dpi = 500
+       )
+# step 3 end
+
+# Figure 3
+gwr.no2.ggplot <- gwr.model.city.no2$SDF
+gwr.no2.ggplot@data <- gwr.no2.ggplot@data %>%
+  dplyr::select(no2_sig_coef)
+gwr.no2.ggplot <- st_as_sf(gwr.no2.ggplot)
+gwr.no2.ggplot <- cbind(gwr.no2.ggplot, as.data.frame(st_coordinates(gwr.no2.ggplot)) )
+st_geometry(gwr.no2.ggplot) <- NULL
+
+gwr.o3.ggplot <- gwr.model.city.o3$SDF
+gwr.o3.ggplot@data <- gwr.o3.ggplot@data %>%
+  dplyr::select(o3_sig_coef)
+gwr.o3.ggplot <- st_as_sf(gwr.o3.ggplot)
+gwr.o3.ggplot <- cbind(gwr.o3.ggplot, as.data.frame(st_coordinates(gwr.o3.ggplot)) )
+st_geometry(gwr.o3.ggplot) <- NULL
+
+gwr.pm25.ggplot <- gwr.model.city.pm25$SDF
+gwr.pm25.ggplot@data <- gwr.pm25.ggplot@data %>%
+  dplyr::select(pm25_sig_coef)
+gwr.pm25.ggplot <- st_as_sf(gwr.pm25.ggplot)
+gwr.pm25.ggplot <- cbind(gwr.pm25.ggplot, as.data.frame(st_coordinates(gwr.pm25.ggplot)) )
+st_geometry(gwr.pm25.ggplot) <- NULL
+
+gwr.AQI_Value.ggplot <- gwr.model.city.AQI_Value$SDF
+gwr.AQI_Value.ggplot@data <- gwr.AQI_Value.ggplot@data %>%
+  dplyr::select(AQI_Value_sig_coef)
+gwr.AQI_Value.ggplot <- st_as_sf(gwr.AQI_Value.ggplot)
+gwr.AQI_Value.ggplot <- cbind(gwr.AQI_Value.ggplot, as.data.frame(st_coordinates(gwr.AQI_Value.ggplot)) )
+st_geometry(gwr.AQI_Value.ggplot) <- NULL
+
+gwr.Poor_AQI.ggplot <- gwr.model.city.Poor_AQI$SDF
+gwr.Poor_AQI.ggplot@data <- gwr.Poor_AQI.ggplot@data %>%
+  dplyr::select(Poor_AQI_sig_coef)
+gwr.Poor_AQI.ggplot <- st_as_sf(gwr.Poor_AQI.ggplot)
+gwr.Poor_AQI.ggplot <- cbind(gwr.Poor_AQI.ggplot, as.data.frame(st_coordinates(gwr.Poor_AQI.ggplot)) )
+st_geometry(gwr.Poor_AQI.ggplot) <- NULL
+
+data.plot.f3 <- dplyr::full_join(gwr.no2.ggplot, gwr.o3.ggplot)
+data.plot.f3 <- dplyr::full_join(data.plot.f3, gwr.pm25.ggplot)
+data.plot.f3 <- dplyr::full_join(data.plot.f3, gwr.AQI_Value.ggplot)
+data.plot.f3 <- dplyr::full_join(data.plot.f3, gwr.Poor_AQI.ggplot)
+rm(gwr.no2.ggplot, gwr.o3.ggplot, gwr.pm25.ggplot, gwr.AQI_Value.ggplot, gwr.Poor_AQI.ggplot)
+
+data.plot.f3 <- data.plot.f3[!(rowSums(is.na(data.plot.f3)) == 5), ]
+
+data.plot.f3$ID <- 1:nrow(data.plot.f3)
+
+data.plot.f3 <- data.plot.f3 %>% 
+  mutate(
+    no2_sig_coef = ifelse(is.na(no2_sig_coef), 0, no2_sig_coef),
+    o3_sig_coef = ifelse(is.na(o3_sig_coef), 0, o3_sig_coef),
+    pm25_sig_coef = ifelse(is.na(pm25_sig_coef), 0, pm25_sig_coef),
+    AQI_Value_sig_coef = ifelse(is.na(AQI_Value_sig_coef), 0, AQI_Value_sig_coef),
+    Poor_AQI_sig_coef = ifelse(is.na(Poor_AQI_sig_coef), 0, Poor_AQI_sig_coef),
+    pm25_sig_coef_nega = ifelse(pm25_sig_coef < 0, -pm25_sig_coef, 0),
+    pm25_sig_coef = ifelse(pm25_sig_coef < 0, 0, pm25_sig_coef),
+    AQI_Value_sig_coef_nega = ifelse(AQI_Value_sig_coef < 0, -AQI_Value_sig_coef, 0),
+    AQI_Value_sig_coef = ifelse(AQI_Value_sig_coef < 0, 0, AQI_Value_sig_coef)
   )
-plot_c1
-plot_c1 %>%
-  tmap_save("02_no2_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-
-
-so2 <- analysis.data %>%
-  dplyr::select(so2, Longitude, Latitude) %>% na.omit()
-xy <- so2 %>% dplyr::select(Longitude, Latitude)
-so2_point <- SpatialPointsDataFrame(coords = xy, data = so2,
-                                    proj4string = CRS(proj))
-rm(xy)
-#---------------------------------------------------Concentration-air-pollution-----------
-brk_dot <- c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60)
-plot_c2 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(so2_point) +
-  tm_dots("so2",size = point.siz, breaks = brk_dot,
-          midpoint = 25,
-          palette = 'YlOrRd',
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0", "", "10", "", "20", "", "30", "", "40", "", "50", "", "60+"),
-          title = expression(paste('The Average Concentration of ', SO[2]))
-          )+
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
+data.plot.f3 <- data.plot.f3 %>% 
+  mutate(
+    no2.n = ifelse(no2_sig_coef > 0, (no2_sig_coef - 0.04) / 0.012, 0),
+    o3.n = ifelse(o3_sig_coef > 0, (o3_sig_coef - 0.03) / 0.01, 0),
+    pm25.n = ifelse(pm25_sig_coef > 0, (pm25_sig_coef - 0.01) / 0.006, 0),
+    AQI_Value.n = ifelse(AQI_Value_sig_coef > 0, (AQI_Value_sig_coef - 0.03) / 0.006, 0),
+    Poor_AQI.n = ifelse(Poor_AQI_sig_coef > 0, (Poor_AQI_sig_coef - 1.5) / 1, 0),
+    pm25.nega.n = ifelse(pm25_sig_coef_nega > 0, (pm25_sig_coef_nega - 0.01) / 0.006, 0),
+    AQI_Value.nega.n = ifelse(AQI_Value_sig_coef_nega > 0, (AQI_Value_sig_coef_nega - 0.03) / 0.006, 0)
   )
-plot_c2
-plot_c2 %>%
-  tmap_save("02_so2_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
+data.plot.f3 <- data.plot.f3 %>% 
+  dplyr::select(-no2_sig_coef, -o3_sig_coef, -pm25_sig_coef, -AQI_Value_sig_coef, -Poor_AQI_sig_coef,
+                -pm25_sig_coef_nega, -AQI_Value_sig_coef_nega)
+data.plot.f3 <- data.plot.f3 %>% 
+  pivot_longer(cols = c(no2.n, o3.n, pm25.n, AQI_Value.n, Poor_AQI.n, pm25.nega.n, AQI_Value.nega.n), 
+               names_to = "type", values_to = "value")
+data.plot.f3$type <- data.plot.f3$type %>% as.factor()
+data.plot.f3$max.Radius <- 5
+colnames(data.plot.f3)[1] <- "Longitude"
+colnames(data.plot.f3)[2] <- "Latitude"
+# step 0 end
 
+# step 1 
+df.grobs <- data.plot.f3 %>%
+  group_by(ID, Longitude, Latitude, max.Radius) %>%
+  do(subplots = ggplot(.,
+                       aes(x = type, y = value, fill = type)) +
+       geom_col(position = "identity", width = 1,
+                alpha = 0.5,            # increase transparency to see map underneath
+                show.legend = FALSE) +  # don't show legend for individual grobs
+       scale_y_continuous(limits = c(0, unique(.$max.Radius))) + 
+       scale_fill_manual(values = c("red", "yellow", "blue", "green", "gray34", "deepskyblue", "orange")) +
+       coord_polar() +
+       theme_void()) %>%
+  mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                           x = Longitude - 3,      # change from 1 to other 
+                                           y = Latitude - 3,      # values if necessary,
+                                           xmax = Longitude + 3,   # depending on the map's
+                                           ymax = Latitude + 3))) # resolution.
+# step 1 end
 
+# step 2
+boundary.1 = boundary %>% st_as_sf() %>% dplyr::select(geometry)
+sf::sf_use_s2(FALSE)
 
-o3 <- analysis.data %>%
-  dplyr::select(o3, Longitude, Latitude) %>% na.omit()
-xy <- o3 %>% dplyr::select(Longitude, Latitude)
-o3_point <- SpatialPointsDataFrame(coords = xy, data = o3,
-                                    proj4string = CRS(proj))
-rm(xy)
-#---------------------------------------------------Concentration-air-pollution-----------
-brk_dot <- c(0, 10, 20, 30, 40, 50, 60, 70, 80)
-plot_c3 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(o3_point) +
-  tm_dots("o3",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0", "", "20", "", "40", "", "60", "", "80+"),
-          title = expression(paste('The Average Concentration of ', O[3]))
-          ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
+p <- ggplot() +
+  geom_sf(data = boundary.1, color = "grey65", fill = "grey97", alpha = 0.5, size = 0.1) +
+  coord_sf(expand = F, crs = 4326) +
+  theme_bw() 
+
+p <- p + annotate(geom="text", x = -175, y = 15, label="Legend:",
+                  hjust = 0) +
+  annotate(geom="text", x = -175, y = 11.5, label="(Note: Coefficients have been normalized)",
+           hjust = 0, size = 2) +
+  annotate(
+    geom="text", x = -175, y = -57, 
+    label = paste0(
+      "Normalization Process of the Coefficients:\nNorm(AQI) = (|AQI| - 0.03) / 0.006\n",
+      "Norm(NO2) = (NO2 - 0.04) / 0.012\n",
+      "Norm(O3) = (O3 - 0.03) / 0.01\n",
+      "Norm(PM2.5) = (|PM2.5| - 0.01) / 0.006\n",
+      "Norm(AIQ(F)) = Probability with Poor AIQ - 1.5 / 1\n",
+      "Not significant values have been ignored."
+    ),
+    hjust = 0,
+    size = 2
   )
-plot_c3
-plot_c3 %>%
-  tmap_save("02_o3_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
 
+# step 2 end
 
-pm25 <- analysis.data %>%
-  dplyr::select(pm25, Longitude, Latitude) %>% na.omit()
-xy <- pm25 %>% dplyr::select(Longitude, Latitude)
-pm25_point <- SpatialPointsDataFrame(coords = xy, data = pm25,
-                                     proj4string = CRS(proj))
-rm(xy)
-#---------------------------------------------------Concentration-air-pollution-----------
-brk_dot <- c(0, 25, 50, 75, 100, 125, 150, 175, 200)
-plot_c4 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(pm25_point) +
-  tm_dots("pm25",size = point.siz, breaks = brk_dot,
-          midpoint = 50,
-          palette = 'YlOrRd',
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0", "", "50", "", "100", "", "150", "", "200"),
-          title = expression(paste('The Average Concentration of ', PM[2.5]))
-          ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
+# step 3
+p <- p + df.grobs$subgrobs
+
+data.plot.l <- data.plot.f3 %>% filter(ID < 2)
+data.plot.l$value <- c(1,2,3,4,5,3,4)
+levels(data.plot.l$type) <- c("AQI", "AQI(-)", "NO2", "O3", "PM2.5", "PM2.5(-)", "AQI(F)")
+legend.p <- ggplot(data.plot.l,
+                   aes(x = type, y = value, fill = type)) +
+  geom_col(position = "identity", width = 1, alpha = 0.5) +
+  guides(fill=FALSE) +
+  scale_fill_manual(values = c("red", "yellow", "blue", "green", "gray34", "deepskyblue", "orange")) +
+  coord_polar() +
+  theme_bw(base_size = 5)
+legend.p
+
+plot.with.insert <-
+  ggdraw() +
+  draw_plot(p) +
+  draw_plot(legend.p, x = 0.03, y = .37, width = .2, height = .2)
+
+#plot.with.insert
+
+ggsave("Figure_3.jpg", plot.with.insert, device = "jpeg", 
+       path = "C:/Users/li.chao.987@s.kyushu-u.ac.jp/OneDrive - Kyushu University/06_Article/04_Figure/REV03",
+       width = 297, height = 210, units = "mm", dpi = 500
+)
+# step 3 end
+
+# Figure 4
+gwr.no2.ggplot <- gwr.model.city.no2$SDF
+gwr.no2.ggplot@data <- gwr.no2.ggplot@data %>%
+  dplyr::select(CFR_0701R) %>% 
+  rename(no2_sig_coef = CFR_0701R)
+gwr.no2.ggplot <- st_as_sf(gwr.no2.ggplot)
+gwr.no2.ggplot <- cbind(gwr.no2.ggplot, as.data.frame(st_coordinates(gwr.no2.ggplot)) )
+st_geometry(gwr.no2.ggplot) <- NULL
+
+gwr.o3.ggplot <- gwr.model.city.o3$SDF
+gwr.o3.ggplot@data <- gwr.o3.ggplot@data %>%
+  dplyr::select(CFR_0701R) %>% 
+  rename(o3_sig_coef = CFR_0701R)
+gwr.o3.ggplot <- st_as_sf(gwr.o3.ggplot)
+gwr.o3.ggplot <- cbind(gwr.o3.ggplot, as.data.frame(st_coordinates(gwr.o3.ggplot)) )
+st_geometry(gwr.o3.ggplot) <- NULL
+
+gwr.pm25.ggplot <- gwr.model.city.pm25$SDF
+gwr.pm25.ggplot@data <- gwr.pm25.ggplot@data %>%
+  dplyr::select(CFR_0701R) %>% 
+  rename(pm25_sig_coef = CFR_0701R)
+gwr.pm25.ggplot <- st_as_sf(gwr.pm25.ggplot)
+gwr.pm25.ggplot <- cbind(gwr.pm25.ggplot, as.data.frame(st_coordinates(gwr.pm25.ggplot)) )
+st_geometry(gwr.pm25.ggplot) <- NULL
+
+gwr.AQI_Value.ggplot <- gwr.model.city.AQI_Value$SDF
+gwr.AQI_Value.ggplot@data <- gwr.AQI_Value.ggplot@data %>%
+  dplyr::select(CFR_0701R) %>% 
+  rename(AQI_Value_sig_coef = CFR_0701R)
+gwr.AQI_Value.ggplot <- st_as_sf(gwr.AQI_Value.ggplot)
+gwr.AQI_Value.ggplot <- cbind(gwr.AQI_Value.ggplot, as.data.frame(st_coordinates(gwr.AQI_Value.ggplot)) )
+st_geometry(gwr.AQI_Value.ggplot) <- NULL
+
+gwr.Poor_AQI.ggplot <- gwr.model.city.Poor_AQI$SDF
+gwr.Poor_AQI.ggplot@data <- gwr.Poor_AQI.ggplot@data %>%
+  dplyr::select(CFR_0701R) %>% 
+  rename(Poor_AQI_sig_coef = CFR_0701R)
+gwr.Poor_AQI.ggplot <- st_as_sf(gwr.Poor_AQI.ggplot)
+gwr.Poor_AQI.ggplot <- cbind(gwr.Poor_AQI.ggplot, as.data.frame(st_coordinates(gwr.Poor_AQI.ggplot)) )
+st_geometry(gwr.Poor_AQI.ggplot) <- NULL
+
+data.plot.f4 <- dplyr::full_join(gwr.no2.ggplot, gwr.o3.ggplot)
+data.plot.f4 <- dplyr::full_join(data.plot.f4, gwr.pm25.ggplot)
+data.plot.f4 <- dplyr::full_join(data.plot.f4, gwr.AQI_Value.ggplot)
+data.plot.f4 <- dplyr::full_join(data.plot.f4, gwr.Poor_AQI.ggplot)
+rm(gwr.no2.ggplot, gwr.o3.ggplot, gwr.pm25.ggplot, gwr.AQI_Value.ggplot, gwr.Poor_AQI.ggplot)
+
+data.plot.f4 <- data.plot.f4[!(rowSums(is.na(data.plot.f4)) == 5), ]
+
+data.plot.f4$ID <- 1:nrow(data.plot.f4)
+
+data.plot.f4 <- data.plot.f4 %>% 
+  mutate(
+    no2_sig_coef = ifelse(is.na(no2_sig_coef), 0, no2_sig_coef),
+    o3_sig_coef = ifelse(is.na(o3_sig_coef), 0, o3_sig_coef),
+    pm25_sig_coef = ifelse(is.na(pm25_sig_coef), 0, pm25_sig_coef),
+    AQI_Value_sig_coef = ifelse(is.na(AQI_Value_sig_coef), 0, AQI_Value_sig_coef),
+    Poor_AQI_sig_coef = ifelse(is.na(Poor_AQI_sig_coef), 0, Poor_AQI_sig_coef),
+    pm25_sig_coef_nega = ifelse(pm25_sig_coef < 0, -pm25_sig_coef, 0),
+    pm25_sig_coef = ifelse(pm25_sig_coef < 0, 0, pm25_sig_coef),
+    AQI_Value_sig_coef_nega = ifelse(AQI_Value_sig_coef < 0, -AQI_Value_sig_coef, 0),
+    AQI_Value_sig_coef = ifelse(AQI_Value_sig_coef < 0, 0, AQI_Value_sig_coef)
   )
-plot_c4
-plot_c4 %>%
-  tmap_save("02_pm25_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
+data.plot.f4 <- data.plot.f4 %>% 
+  mutate(
+    no2.n = no2_sig_coef / 7,
+    o3.n = o3_sig_coef / 10,
+    pm25.n = pm25_sig_coef / 3.2,
+    pm25.nega.n = pm25_sig_coef_nega / 3.2,
+    AQI_Value.n = AQI_Value_sig_coef / 1.3,
+    AQI_Value.nega.n = AQI_Value_sig_coef_nega / 1.3,
+    Poor_AQI.n = Poor_AQI_sig_coef / 2.2
+    )
+)
+data.plot.f4 <- data.plot.f4 %>% 
+  dplyr::select(-no2_sig_coef, -o3_sig_coef, -pm25_sig_coef, -AQI_Value_sig_coef, -Poor_AQI_sig_coef,
+                -pm25_sig_coef_nega, -AQI_Value_sig_coef_nega)
+data.plot.f4 <- data.plot.f4 %>% 
+  pivot_longer(cols = c(no2.n, o3.n, pm25.n, AQI_Value.n, Poor_AQI.n, pm25.nega.n, AQI_Value.nega.n), 
+               names_to = "type", values_to = "value")
+data.plot.f4$type <- data.plot.f4$type %>% as.factor()
+data.plot.f4$max.Radius <- 5
+colnames(data.plot.f4)[1] <- "Longitude"
+colnames(data.plot.f4)[2] <- "Latitude"
+# step 0 end
 
+# step 1 
+df.grobs <- data.plot.f4 %>%
+  group_by(ID, Longitude, Latitude, max.Radius) %>%
+  do(subplots = ggplot(.,
+                       aes(x = type, y = value, fill = type)) +
+       geom_col(position = "identity", width = 1,
+                alpha = 0.5,            # increase transparency to see map underneath
+                show.legend = FALSE) +  # don't show legend for individual grobs
+       scale_y_continuous(limits = c(0, unique(.$max.Radius))) + 
+       scale_fill_manual(values = c("red", "yellow", "blue", "green", "gray34", "deepskyblue", "orange")) +
+       coord_polar() +
+       theme_void()) %>%
+  mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                           x = Longitude - 3,      # change from 1 to other 
+                                           y = Latitude - 3,      # values if necessary,
+                                           xmax = Longitude + 3,   # depending on the map's
+                                           ymax = Latitude + 3))) # resolution.
+# step 1 end
 
+# step 2
+boundary.1 = boundary %>% st_as_sf() %>% dplyr::select(geometry)
+sf::sf_use_s2(FALSE)
 
-pm10 <- analysis.data %>%
-  dplyr::select(pm10, Longitude, Latitude) %>% na.omit()
-xy <- pm10 %>% dplyr::select(Longitude, Latitude)
-pm10_point <- SpatialPointsDataFrame(coords = xy, data = pm10,
-                                     proj4string = CRS(proj))
-rm(xy)
-#---------------------------------------------------Concentration-air-pollution-----------
-brk_dot <- c(0, 25, 50, 75, 100, 125, 150, 175, 200)
-plot_c5 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(pm10_point) +
-  tm_dots("pm10",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          midpoint = 80,
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0", "", "50", "", "100", "", "150", "", "200"),
-          title = expression(paste('The Average Concentration of ', PM[10]))
-          ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
+p <- ggplot() +
+  geom_sf(data = boundary.1, color = "grey65", fill = "grey97", alpha = 0.5, size = 0.1) +
+  coord_sf(expand = F, crs = 4326) +
+  theme_bw() 
+
+p <- p + annotate(geom="text", x = -175, y = 15, label="Legend:",
+                  hjust = 0) +
+  annotate(geom="text", x = -175, y = 11.5, label="(Note: CFRRs have been normalized)",
+           hjust = 0, size = 2) +
+  annotate(
+    geom="text", x = -175, y = -57, 
+    label = paste0(
+      "Normalization Process of the CFRRs:\nNorm(AQI) = |CFRR of AQI| / 1.3\n",
+      "Norm(NO2) = CFRR of NO2 / 7\n",
+      "Norm(O3) = CFRR of O3 / 10\n",
+      "Norm(PM2.5) = |CFRR of PM2.5| / 3.2\n",
+      "Norm(AIQ(F)) = CFRR of Probability with Poor AIQ / 2.2\n",
+      "Not significant values have been ignored."
+    ),
+    hjust = 0,
+    size = 2
   )
-plot_c5
-plot_c5 %>%
-  tmap_save("02_pm10_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
 
+# step 2 end
 
-AQI <- analysis.data %>%
-  dplyr::select(AQI_Value, Longitude, Latitude) %>% na.omit()
-xy <- AQI %>% dplyr::select(Longitude, Latitude)
-AQI_point <- SpatialPointsDataFrame(coords = xy, data = AQI,
-                                     proj4string = CRS(proj))
-rm(xy)
-#---------------------------------------------------Concentration-air-pollution-----------
-brk_dot <- c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
-plot_c6 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(AQI_point) +
-  tm_dots("AQI_Value",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0", "", "20", "", "40", "", "60", "", "80", "", "100"),
-          title = 'The Average AQI') +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_c6
-plot_c6 %>%
-  tmap_save("02_AQI_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
+# step 3
+p <- p + df.grobs$subgrobs
 
+data.plot.l <- data.plot.f4 %>% filter(ID < 2)
+data.plot.l$value <- c(1,2,3,4,5,3,4)
+levels(data.plot.l$type) <- c("AQI", "AQI(-)", "NO2", "O3", "PM2.5", "PM2.5(-)", "AQI(F)")
+legend.p <- ggplot(data.plot.l,
+                   aes(x = type, y = value, fill = type)) +
+  geom_col(position = "identity", width = 1, alpha = 0.5) +
+  guides(fill=FALSE) +
+  scale_fill_manual(values = c("red", "yellow", "blue", "green", "gray34", "deepskyblue", "orange")) +
+  coord_polar() +
+  theme_bw(base_size = 5)
+legend.p
 
-Pr_AQI <- analysis.data %>%
-  dplyr::select(Poor_AQI, Longitude, Latitude) %>% na.omit()
-xy <- Pr_AQI %>% dplyr::select(Longitude, Latitude)
-Pr_AQI_point <- SpatialPointsDataFrame(coords = xy, data = Pr_AQI,
-                                    proj4string = CRS(proj))
-rm(xy)
-#---------------------------------------------------Concentration-air-pollution-----------
-brk_dot <- c(0, 0.1, 0.2, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00)
-plot_c7 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(Pr_AQI_point) +
-  tm_dots("Poor_AQI",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0", "", "20", "", "40", "", "60", "", "80", "", "100"),
-          title = 'The Probability with Poor AQI (%)') +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_c7
-plot_c7 %>%
-  tmap_save("02_Poor_AQI_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
+plot.with.insert <-
+  ggdraw() +
+  draw_plot(p) +
+  draw_plot(legend.p, x = 0.03, y = .37, width = .2, height = .2)
 
+#plot.with.insert
 
-#--------------GWR Result-------------------
-brk_dot <- c(0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10)
-gwr.model.city.no2$SDF@data <- gwr.model.city.no2$SDF@data %>%
-  mutate(no2_sig_coef = ifelse(no2_sig_coef == 0, NA, no2_sig_coef))
-plot_4.1 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.no2$SDF) +
-  tm_dots("no2_sig_coef",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          textNA = "Not Significant",
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0.04", "", "0.06", "", "0.08", "", "0.10"),
-          title = expression(paste('The Spatial Distribution of ', NO[2],' Coefficient'))
-          ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_4.1
-plot_4.1 %>%
-  tmap_save("03_no2_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-#There is no significant value in SO2
-
-gwr.model.city.o3$SDF@data <- gwr.model.city.o3$SDF@data %>%
-  mutate(o3_sig_coef = ifelse(o3_sig_coef == 0, NA, o3_sig_coef))
-brk_dot <- c(0.03, 0.04, 0.05, 0.06, 0.07, 0.08)
-plot_4.2 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.o3$SDF) +
-  tm_dots("o3_sig_coef",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          textNA = "Not Significant",
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0.03", "0.04", "0.05", "0.06", "0.07", "0.08"),
-          title = expression(paste('The Spatial Distribution of ', O[3], ' Coefficient'))
-  ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_4.2
-plot_4.2 %>%
-  tmap_save("03_o3_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-
-gwr.model.city.pm25$SDF@data <- gwr.model.city.pm25$SDF@data %>%
-  mutate(pm25_sig_coef = ifelse(pm25_sig_coef == 0, NA, pm25_sig_coef))
-brk_dot <- c(-0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04)
-plot_4.3 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.pm25$SDF) +
-  tm_dots("pm25_sig_coef",size = point.siz, breaks = brk_dot,
-          midpoint = 0,
-          palette = '-RdYlBu',
-          textNA = "Not Significant",
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("0.03", "0.04", "0.05", "0.06", "0.07", "0.08"),
-          title = expression(paste('The Spatial Distribution of ', PM[2.5], ' Coefficient'))
-  ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_4.3
-plot_4.3 %>%
-  tmap_save("03_pm25_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-
-gwr.model.city.AQI_Value$SDF@data <- gwr.model.city.AQI_Value$SDF@data %>%
-  mutate(AQI_Value_sig_coef = ifelse(AQI_Value_sig_coef == 0, NA, AQI_Value_sig_coef))
-brk_dot <- c(-0.06, -0.04, -0.02, 0, 0.02, 0.04, 0.06)
-plot_4.4 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.AQI_Value$SDF) +
-  tm_dots("AQI_Value_sig_coef",size = point.siz, breaks = brk_dot,
-          midpoint = 0,
-          palette = '-RdYlBu',
-          textNA = "Not Significant",
-          legend.is.portrait = F,  style = 'cont',
-          title = 'The Spatial Distribution of AQI Coefficient'
-  ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_4.4
-plot_4.4 %>%
-  tmap_save("04_Figure\\03_AQI_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-gwr.model.city.Poor_AQI$SDF@data <- gwr.model.city.Poor_AQI$SDF@data %>%
-  mutate(Poor_AQI_sig_coef = ifelse(Poor_AQI_sig_coef == 0, NA, Poor_AQI_sig_coef))
-brk_dot <- c(1, 2, 3, 4, 5, 6, 7)
-plot_4.5 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.Poor_AQI$SDF) +
-  tm_dots("Poor_AQI_sig_coef",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          textNA = "Not Significant",
-          legend.is.portrait = F,  style = 'cont',
-          labels = c("1", "2", "3", "4", "5", "6", "7"),
-          title = 'The Spatial Distribution of Probability with Poor AQI Coefficient'
-  ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_4.5
-plot_4.5 %>%
-  tmap_save("03_PrAQI_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-#--------------GWR Result-------------------
-
-#----------------CFRR -------------------
-brk_dot <- c(0, 5, 10, 15, 20, 25, 30, 35)
-plot_5.1 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.no2$SDF) +
-  tm_dots("CFR_0701R",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          textNA = "Not Significant",
-          legend.is.portrait = F,  style = 'cont',
-          title = expression(paste('The CFRR of a 1-PPB Increase in ', NO[2]))
-          ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_5.1
-plot_5.1 %>%
-  tmap_save("04_no2_CFRR_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-
-brk_dot <- c(0, 5, 10, 15, 20, 25, 30, 35, 40)
-plot_5.2 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.o3$SDF) +
-  tm_dots("CFR_0701R",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          legend.is.portrait = F,  style = 'cont',
-          textNA = "Not Significant",
-          labels = c("0", "5", "10", "15", "20", "25", "30", "35", "40 +"),
-          title = expression(paste('The CFRR of a 1-PPB Increase in ', O[3]))
-  ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_5.2
-plot_5.2 %>%
-  tmap_save("04_o3_CFRR_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-
-
-brk_dot <- c(-3, 0, 3, 6, 9, 12, 15, 18)
-plot_5.3 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.pm25$SDF) +
-  tm_dots("CFR_0701R",size = point.siz, breaks = brk_dot,
-          midpoint = 0,
-          palette = '-RdYlBu',
-          legend.is.portrait = F,  style = 'cont',
-          textNA = "Not Significant",
-          labels = c("-3", "0", "3", "6", "9", "12", "15", "18"),
-          title = expression(paste('The CFRR of a 1-', mu,'g Increase in ', PM[2.5]))
-  ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_5.3
-plot_5.3 %>%
-  tmap_save("04_pm25_CFRR_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-
-brk_dot <- c(-6, -4, -2, 0, 2, 4, 6, 8)
-plot_5.4 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.AQI_Value$SDF) +
-  tm_dots("CFR_0701R",size = point.siz, breaks = brk_dot,
-          palette = '-RdYlBu',
-          legend.is.portrait = F,  style = 'cont',
-          textNA = "Not Significant",
-          labels = c("-3", "0", "3", "6", "9", "12", "15", "18"),
-          title = expression(paste('The CFRR of a 1-unit Increase in AQI'))
-  ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_5.4
-plot_5.4 %>%
-  tmap_save("04_AQI_CFRR_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
-
-brk_dot <- c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-plot_5.5 <- tm_shape(boundary) + 
-  tm_borders(lwd = 1, alpha = .5) +
-  tm_grid(labels.size = lab.siz)+ 
-  tm_layout(inner.margins=c(0,0,.1,0)) +
-  tm_shape(gwr.model.city.Poor_AQI$SDF) +
-  tm_dots("CFR_0701R",size = point.siz, breaks = brk_dot,
-          palette = 'YlOrRd',
-          legend.is.portrait = F,  style = 'cont',
-          textNA = "Not Significant",
-          labels = c("0", "1", "2", "3", "4", "5", "6", "7", "8" ,"9", '10+'),
-          title = expression(paste('The CFRR of 1% Increase in Probability with Poor AQI'))
-  ) +
-  tm_layout(
-    frame.lwd = 3,
-    legend.show = T,
-    legend.position = c("left", "bottom"),
-    legend.bg.color = "white",
-    legend.text.size = leg.tex.siz ,
-    legend.title.size = leg.tit.siz * 2,
-    main.title.size = mai.tit.siz, 
-    main.title.position = c("center", "center"),
-    legend.width = 20,
-    legend.height = 4
-  )
-plot_5.5
-plot_5.5 %>%
-  tmap_save("04_PrAQI_CFRR_dot.jpg" , width = 800, height = 450, units = 'mm', dpi = 300)
+ggsave("Figure_4.jpg", plot.with.insert, device = "jpeg", 
+       path = "C:/Users/li.chao.987@s.kyushu-u.ac.jp/OneDrive - Kyushu University/06_Article/04_Figure/REV03",
+       width = 297, height = 210, units = "mm", dpi = 500
+)
+# step 3 end
