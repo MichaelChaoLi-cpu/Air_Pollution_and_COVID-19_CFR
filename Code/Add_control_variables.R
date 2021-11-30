@@ -48,7 +48,7 @@ for (filename in filelist_tif){
   } else {
     age <- str_sub(filename, 10, 10) %>% as.numeric()
   }
-  data_ext <- terra::extract(test_tiff, city_buffer, fun = mean, na.rm = TRUE) # use 2 degrees buffer
+  data_ext <- terra::extract(test_tiff, city_buffer, fun = mean, na.rm = TRUE) 
   city_buffer@data$pop <- data_ext
   pop_data <- city_buffer@data %>%
     dplyr::select(City_Code, pop)
