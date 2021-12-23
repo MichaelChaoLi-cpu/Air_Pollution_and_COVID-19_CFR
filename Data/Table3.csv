@@ -1,0 +1,8 @@
+Variable,Coefficient,CFRR(%),95% CI,t-value,CILower,CIUpper,Significance
+Average Concentration of NO2,0.023,1.45,(0.002 - 2.870),1.968,0.002,2.87,**
+Average Concentration of SO2,0.016,1.005,(0.064 - 1.952),2.064,0.064,1.952,**
+Average Concentration of O3,0.015,0.992,(0.072 - 1.905),2.1,0.072,1.905,**
+Average Concentration of PM2.5,0.014,0.86,(0.439 - 1.270),4.031,0.439,1.27,***
+Average Concentration of PM10,0.009,0.568,(-0.028 ?C 1.156),1.863,-0.028,1.156,*
+Average AQI,0.012,0.776,(0.229 ?C 1.312),2.788,0.229,1.312,***
+Probability of Living with Poor AQI,0.005,0.304,(-21.213 ?C 80.735),1.165,-0.212,0.807,-

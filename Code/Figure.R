@@ -3,6 +3,7 @@ library(ggplot2)
 library(sf)
 library(dplyr)
 library(cowplot)
+library(dplyr)
 
 # Figure 1
 boundary.1 = boundary %>% st_as_sf() %>% dplyr::select(geometry)
@@ -493,3 +494,39 @@ ggsave("Figure_4.jpg", plot.with.insert, device = "jpeg",
        width = 297, height = 210, units = "mm", dpi = 500
 )
 # step 3 end
+
+#### adding new figure 12.23
+table3 <- read.csv("C:/Users/li.chao.987@s.kyushu-u.ac.jp/Documents/Air_Pollution_and_COVID-19_CFR/Data/Table3.csv")
+table3 <- table3 %>%
+  mutate(Significance = ifelse(Significance == "-", " ", Significance))
+table3$addingLabel <- paste0(as.character(table3$CFRR...), " ", table3$Significance)
+figure_5 <- ggplot(data = table3, aes(x = Variable, y = CFRR...)) +
+  geom_bar(stat = "identity", position=position_dodge(), aes(fill = Variable)) +
+  geom_errorbar(aes(ymin = CILower, ymax = CIUpper),
+                position=position_dodge(1), width = .5,
+                size = 1, color = "gray34") +
+  geom_text(aes(label = addingLabel), color="black",
+            position = position_dodge(1), size = 7,
+            vjust = -0.3) +
+  scale_fill_brewer(palette = "Paired", 
+                    labels = c(
+                      "AQI (1-score)", "NO2 (PPB)", "O3 (PPB)",
+                      "PM10 (ug/m3)", "PM2.5 (ug/m3)", "SO2 (PPB)",
+                      "Pronability of Living with Poor AQI (%)"
+  )) +
+  scale_x_discrete(name = 'Air Pollution Type', labels = NULL) +
+  scale_y_continuous(name = 'CFRR (%)') +
+  labs(caption = "Note: *** p < 0.01, ** p < 0.05, * p < 0.10") +
+  theme(axis.text.x = element_text(color = 'black', size = 14, angle = 90, vjust = 0.5),
+        axis.text.y = element_text(color = 'black', size = 18),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 14),
+        title = element_text(color = 'black', size = 22),
+        legend.direction = "horizontal",
+        legend.position = "bottom") 
+
+figure_5
+ggsave("Figure_5.jpg", figure_5, device = "jpeg", 
+       path = "C:/Users/li.chao.987@s.kyushu-u.ac.jp/OneDrive - Kyushu University/06_Article/04_Figure/REV03",
+       width = 297, height = 210, units = "mm", dpi = 500
+)
