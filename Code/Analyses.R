@@ -8,6 +8,32 @@ library(spdep)
 library(spgwr)
 library(GWmodel)
 library(tmap)
+library(plotrix)
+
+### check if national level can present the city-level
+aim.country.list <- c("AT", "CL", "DE", 'ES', "GB", "US")
+output.country.city.representivity <- data.frame(Doubles=double(),
+                                                 Ints=integer(),
+                                                 Factors=factor(),
+                                                 Logicals=logical(),
+                                                 Characters=character(),
+                                                 stringsAsFactors=FALSE)
+  
+for (aim.country in aim.country.list) {
+  country.test <- aim.country
+  covid.country <- covid19(country = country.test, level = 1) %>%
+    filter(date == ymd("2021-06-30"))
+  country.cfr <- covid.country$deaths / covid.country$confirmed * 100
+  covid <- analysis.data %>%
+    filter(Country.y == country.test)
+  city.sd <- sd(covid$CFR_0701, na.rm = T)
+  city.mean <- mean(covid$CFR_0701, na.rm = T)
+  abs.dif <- abs((city.mean - country.cfr)/city.sd)
+  line <- c(country.test, country.cfr, city.mean, abs.dif)
+  output.country.city.representivity <- rbind(output.country.city.representivity, line)
+}
+colnames(output.country.city.representivity) <-
+  c("Country", "CountryCFR", "MeanCityCFR", "Absolute")
 
 analysis.data$lg_CFR_0701 <- (analysis.data$CFR_0701 + 1) %>% log()  
 analysis.data$lg_CFR_0101 <- (analysis.data$CFR_0101 + 1) %>% log() 
