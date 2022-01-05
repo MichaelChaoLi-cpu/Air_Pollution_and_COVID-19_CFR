@@ -28,6 +28,10 @@ GDP per Capita (PPP): Scientific Data: 10.1038/sdata.2018.4
    
 We thank all abovementioned data providers for making their data public and for enabling this research to be possible.  
 
+## Cite our Article  
+Li, C., Managi, S., 2022. Impacts of air pollution on COVID-19 case fatality rate: a global analysis. Environmental Science and Pollution Research.  
+Note：The [manuscript](\Manuscript\Li-2022-Impacts-of-air-pollution-on-covid--.pdf) is in the Manuscript Folder.
+
 ## Contact Us:  
 - Email: Prof. Shunsuke Managi <managi@doc.kyushu-u.ac.jp>  
 - Email: Chao Li <chaoli0394@gmail.com>  
