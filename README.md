@@ -1,5 +1,6 @@
 # Air Pollution and COVID-19 Case Fatality Rate - A Global Analysis  
- The coronavirus disease 2019 (COVID-19) pandemic is still rapidly spreading globally. To detect high-risk cities and the impacts of air pollution on public health, this study explores the relationship between the long-term average concentration of air pollution and the city-level case fatality rate (CFR) of COVID-19 globally. Then, geographically weighted regression (GWR) is applied to illustrate the spatial variability of the relationships. Six air pollution factors, including nitrogen dioxide (NO2), sulfur dioxide (SO2), ozone (O3), PM2.5 (particles with diameter  ≤2.5 μm), PM10 (particles with diameter  ≤10 μm), and air quality index (AQI), are positively associated with the city-level COVID-19 CFR. Our results indicate that a 1-unit increase in NO2, SO2, O3, PM2.5, PM10, AQI, is related to a 1.450%, 1.005%, 0.992%, 0.860%, 0.568%, and 0.776% increase in the city-level COVID-19 CFR, respectively. Additionally, the effects of NO2, O3, PM2.5, AQI, and probability with poor AQI on COVID-19 have spatial variability worldwide. The adverse impacts of air pollution are different among the cities. This study illustrates that long-term exposure to air pollution is related to the COVID-19 CFR, i.e., it leads to more deaths after being infected by COVID-19.  
+ The coronavirus disease 2019 (COVID-19) pandemic is still rapidly spreading globally. To probe high-risk cities and the impacts of air pollution on public health, this study explores the relationship between the long-term average concentration of air pollution and the city-level case fatality rate (CFR) of COVID-19 globally. Then, geographically weighted regression (GWR) is applied to examine the spatial variability of the relationships. Six air pollution factors, including nitrogen dioxide (NO2), sulfur dioxide (SO2), ozone (O3), PM2.5 (particles with diameter  ≤2.5 μm), PM10 (particles with diameter  ≤10 μm), and air quality index (AQI), are positively associated with the city-level COVID-19 CFR. Our results indicate that a 1-unit increase in NO2 (part per billion, PPB), SO2 (PPB), O3 (PPB), PM2.5 (microgram per cubic meter, μg⁄m^3 ), PM10 (μg⁄m^3 ), AQI (score), is related to a 1.450%, 1.005%, 0.992%, 0.860%, 0.568%, and 0.776% increase in the city-level COVID-19 CFR, respectively. Additionally, the effects of NO2, O3, PM2.5, AQI, and probability of living with poor AQI on COVID-19 spatially vary in view of the estimation of the GWR. In other words, the adverse impacts of air pollution on health are different among the cities. In summary, long-term exposure to air pollution is negatively related to the COVID-19 health outcome, and the relationship is spatially non-stationary. Our research sheds light on the impacts of slashing air pollution on public health in the COVID-19 pandemic to help governments formulate air pollution policies in light of the local situations.The coronavirus disease 2019 (COVID-19) pandemic is still rapidly spreading globally. To detect high-risk cities and the impacts of air pollution on public health, this study explores the relationship between the long-term average concentration of air pollution and the city-level case fatality rate (CFR) of COVID-19 globally. Then, geographically weighted regression (GWR) is applied to illustrate the spatial variability of the relationships. Six air pollution factors, including nitrogen dioxide (NO2), sulfur dioxide (SO2), ozone (O3), PM2.5 (particles with diameter  ≤2.5 μm), PM10 (particles with diameter  ≤10 μm), and air quality index (AQI), are positively associated with the city-level COVID-19 CFR. Our results indicate that a 1-unit increase in NO2, SO2, O3, PM2.5, PM10, AQI, is related to a 1.450%, 1.005%, 0.992%, 0.860%, 0.568%, and 0.776% increase in the city-level COVID-19 CFR, respectively. Additionally, the effects of NO2, O3, PM2.5, AQI, and probability with poor AQI on COVID-19 have spatial variability worldwide. The adverse impacts of air pollution are different among the cities. This study illustrates that long-term exposure to air pollution is related to the COVID-19 CFR, i.e., it leads to more deaths after being infected by COVID-19.   
+   
 ## Results: Coefficients, CFRR, 95% Confidence Intervals, and t-Value for Air Pollution Factors on COVID-19 CFR  
 |	        |Variable                   	|Coefficient|CFRR(%)|95% CI	            |t-value|  
 | :----:    | :----:                        | :----:    | :----:| :----:            |:----:|
@@ -11,14 +12,26 @@
 |Model 6	|Average AQI                	|0.012***	|0.776	|(0.229 – 1.312)	|2.788|  
 |Model 7	|Probability with Poor AQI  	|0.486	    |30.445	|(-21.213 – 80.735)	|1.165|  
 | Note:      |                               |           |       |                   | \*p<0.1, \*\*p<0.05, \*\*\*p<0.01 |  
-  
-  
+   
+   
+### Figure 2: The Spatial Distribution of NO2, SO2, O3, PM2.5, PM10, AQI Concentrations, and Probability of Living with Poor AQI  
+![](/Figure/Figure_2.jpg)
+
+### Figure 3: The CFRRs of Severn Air Pollution Types
+![](/Figure/Figure_5.jpg)
+
+### Figure 4: The Spatial Distribution of the Coefficients of NO2, O3, PM2.5, AQI, and Probability of Living with Poor AQI
+![](/Figure/Figure_3.jpg)
+
+### Figure 5: The Spatial Distribution of the CFRRs of 1 Unit Increase of NO2, O3, PM2.5, AQI, and Probability with Poor AQI
+![](/Figure/Figure_4.jpg)
+
 ## Code  
-[Preprocessing.R](\Code\Preprocessing.R) includes the code to extract all necessary data except CFR data.  
-[CFR.R](\Code\CFR.R) includes the code to extract CFR data from R package "COVID-19" and to merge the data from Preprocessing.R.  
-[Add_control_variables.R](\Code\Add_control_variables.R) includes the code to extract control variables from dataset.  
-[Analyses.R](\Code\Analyses.R) includes the code to implement the Mixed Effects Models (MEM) and geographical weighted model (GWR).  
-[Figure.R](\Code\Figure.R) includes the code to generate figures in Main Text and Supplementary Materials.  
+[Preprocessing.R](/Code/Preprocessing.R) includes the code to extract all necessary data except CFR data.  
+[CFR.R](/Code/CFR.R) includes the code to extract CFR data from R package "COVID-19" and to merge the data from Preprocessing.R.  
+[Add_control_variables.R](/Code/Add_control_variables.R) includes the code to extract control variables from dataset.  
+[Analyses.R](/Code/Analyses.R) includes the code to implement the Mixed Effects Models (MEM) and geographical weighted model (GWR).  
+[Figure.R](/Code/Figure.R) includes the code to generate figures in Main Text and Supplementary Materials.  
   
 ## Data
 The dependent variable is the city-level CFR, which is the ratio between deaths and confirmed cases in the cities. The data source is the R package “COVID19”, provided by Oxford COVID-19 Government Response Tracker. The numbers of deaths and confirmed cases of COVID-19 are provided by the R package “COVID19”. The last day of the data is 30th June 2021.  
@@ -30,7 +43,7 @@ We thank all abovementioned data providers for making their data public and for 
 
 ## Cite our Article  
 Li, C., Managi, S., 2022. Impacts of air pollution on COVID-19 case fatality rate: a global analysis. Environmental Science and Pollution Research.  
-Note：The [manuscript](\Manuscript\Li-2022-Impacts-of-air-pollution-on-covid--.pdf) is in the Manuscript Folder.
+Note：The [manuscript](/Manuscript/Li-2022-Impacts-of-air-pollution-on-covid--.pdf) is in the Manuscript Folder.
 
 ## Contact Us:  
 - Email: Prof. Shunsuke Managi <managi@doc.kyushu-u.ac.jp>  
